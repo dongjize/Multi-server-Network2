@@ -2,6 +2,7 @@ group 'cnc'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'idea'
 
 sourceCompatibility = 1.8
 
@@ -16,4 +17,25 @@ dependencies {
     compile 'commons-cli:commons-cli:1.4'
     compile "org.apache.logging.log4j:log4j-api:2.5"
     compile "org.apache.logging.log4j:log4j-core:2.5"
+}
+
+
+def appMainClass = 'activitystreamer.Server'
+
+
+jar {
+    configurations.runtime.each { println it.path }
+    println "========="
+    configurations.compile.each { println it.path }
+    println "========="
+
+
+    from {
+        //添加依懒到打包文件
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+//        configurations.runtime.collect { zipTree(it) }
+    }
+    manifest {
+        attributes 'Main-Class': "$appMainClass"
+    }
 }
