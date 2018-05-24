@@ -19,8 +19,7 @@ dependencies {
     compile "org.apache.logging.log4j:log4j-core:2.5"
 }
 
-
-def appMainClass = 'activitystreamer.Server'
+//def appMainClass = 'activitystreamer.Server'
 
 
 jar {
@@ -36,6 +35,9 @@ jar {
 //        configurations.runtime.collect { zipTree(it) }
     }
     manifest {
-        attributes 'Main-Class': "$appMainClass"
+//        attributes('Main-Class': 'activitystreamer.Server',
+//                'Implementation-Title': "Server")
+        attributes('Main-Class': 'activitystreamer.Client',
+                'Implementation-Title': "Client")
     }
 }

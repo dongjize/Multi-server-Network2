@@ -7,7 +7,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.*;
 import java.net.Socket;
 
-public class Connection extends Thread {
+public class Connection extends Thread implements Serializable {
+
     private static final Logger log = LogManager.getLogger();
     private DataInputStream dis;
     private DataOutputStream dos;
@@ -17,19 +18,26 @@ public class Connection extends Thread {
     private Socket socket;
     private boolean term = false;
 
-    Connection(Socket socket) throws IOException {
-        dis = new DataInputStream(socket.getInputStream());
-        dos = new DataOutputStream(socket.getOutputStream());
+    private Integer connID;
+    private long connTime;
+    private boolean isAuthenticated = false;
+    private boolean isLoggedIn = false;
+
+    public static final String PARENT = "PARENT";
+    public static final String CHILD = "CHILD";
+
+    private Control control = Control.getInstance();
+
+    public Connection(Socket s) throws IOException {
+        dis = new DataInputStream(s.getInputStream());
+        dos = new DataOutputStream(s.getOutputStream());
         br = new BufferedReader(new InputStreamReader(dis));
         pw = new PrintWriter(dos, true);
-        this.socket = socket;
+        this.socket = s;
         open = true;
         start();
     }
 
-    /*
-     * returns true if the message was written, otherwise false
-     */
     public boolean writeMsg(String msg) {
         if (open) {
             pw.println(msg);
@@ -41,7 +49,7 @@ public class Connection extends Thread {
 
     public void closeCon() {
         if (open) {
-            log.info("closing connection by closeCon" + Settings.socketAddress(socket));
+            log.info("closing connection by closeCon " + Settings.socketAddress(socket));
             try {
                 term = true;
                 br.close();
@@ -53,6 +61,7 @@ public class Connection extends Thread {
         }
     }
 
+    @Override
     public void run() {
         try {
             String data;
@@ -75,6 +84,38 @@ public class Connection extends Thread {
 
     public boolean isOpen() {
         return open;
+    }
+
+    public Integer getConnID() {
+        return connID;
+    }
+
+    public void setConnID(Integer connID) {
+        this.connID = connID;
+    }
+
+    public boolean isLoggedIn() {
+        return isLoggedIn;
+    }
+
+    public void setLoggedIn(boolean loggedIn) {
+        isLoggedIn = loggedIn;
+    }
+
+    public long getConnTime() {
+        return connTime;
+    }
+
+    public void setConnTime(long connTime) {
+        this.connTime = connTime;
+    }
+    
+    public boolean isAuthenticated() {
+        return isAuthenticated;
+    }
+
+    public void setAuthenticated(boolean authenticated) {
+        isAuthenticated = authenticated;
     }
 
 }

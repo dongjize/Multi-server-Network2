@@ -10,6 +10,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 public class Server {
+
     private static final Logger log = LogManager.getLogger();
 
     private static void help(Options options) {
@@ -92,6 +93,7 @@ public class Server {
                 System.out.println("server secret: " + cmd.getOptionValue("s"));
             }
         }
+
         // set server id.
         Settings.setServerId();
 
@@ -110,5 +112,4 @@ public class Server {
             }
         });
     }
-
 }

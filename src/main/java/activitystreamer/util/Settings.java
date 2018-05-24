@@ -3,24 +3,27 @@ package activitystreamer.util;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.math.BigInteger;
 import java.net.Socket;
-import java.security.SecureRandom;
 import java.util.Random;
 
 public class Settings {
     private static final Logger log = LogManager.getLogger();
-    private static SecureRandom random = new SecureRandom();
     private static int localPort = 3780;
     private static String localHostname = "localhost";
     private static String remoteHostname = null;
     private static int remotePort = 3780;
-    private static int activityInterval = 5000; // milliseconds
+
+    // set the heart beat interval = 5 seconds
+    private static int activityInterval = 5000;
+
+    // set the heart beat timeout = 10 seconds
+    private static int activityTimeout = 10 * 1000;
+
     // server id.
     private static String serverId;
+
     // serverIdLength
-    private static int serverIdLength = 26;
-    private static boolean remoteAuthenticated = false;
+    private static final int RANDOM_LENGTH = 26;
     private static String serverSecret = "1";
 
     // for client
@@ -29,16 +32,16 @@ public class Settings {
 
     // set server id.
     public static void setServerId() {
-        serverId = genRandomString();
+        serverId = localPort + "";
     }
 
     // generate random String
     public static String genRandomString() {
         String range = "0123456789abcdefghijklmnopqrstuvwxyz";
         Random rd = new Random();
-        StringBuffer randomId = new StringBuffer();
+        StringBuilder randomId = new StringBuilder();
         // randomId.length = 26
-        for (int i = 0; i < serverIdLength; i++) {
+        for (int i = 0; i < RANDOM_LENGTH; i++) {
             randomId.append(range.charAt(rd.nextInt(range.length())));
         }
         return randomId.toString();
@@ -89,6 +92,14 @@ public class Settings {
         Settings.activityInterval = activityInterval;
     }
 
+    public static int getActivityTimeout() {
+        return activityTimeout;
+    }
+
+    public static void setActivityTimeout(int activityTimeout) {
+        Settings.activityTimeout = activityTimeout;
+    }
+
     public static String getUserSecret() {
         return userSecret;
     }
@@ -121,13 +132,6 @@ public class Settings {
         Settings.serverSecret = serverSecret;
     }
 
-    public static boolean isRemoteAuthenticated() {
-        return remoteAuthenticated;
-    }
-
-    public static void setRemoteAuthenticated(boolean remoteAuthenticated) {
-        Settings.remoteAuthenticated = remoteAuthenticated;
-    }
 
     /*
      * some general helper functions
@@ -137,8 +141,5 @@ public class Settings {
         return socket.getInetAddress() + ":" + socket.getPort();
     }
 
-    public static String nextSecret() {
-        return new BigInteger(130, random).toString(32);
-    }
 
 }

@@ -1,39 +1,45 @@
 package activitystreamer.util;
 
+import java.io.Serializable;
 import java.net.SocketAddress;
 
-public class User {
-	private SocketAddress localSocketAddress;
-	private String userName;
-	private String password;
+public class User implements Serializable {
+    private SocketAddress localSocketAddress;
+    private String userName;
+    private String secret;
 
-	public User(SocketAddress socketAddress, String userName, String password) {
-		this.localSocketAddress = socketAddress;
-		this.userName = userName;
-		this.password = password;
-	}
+    public User(String userName, String secret) {
+        this.userName = userName;
+        this.secret = secret;
+    }
 
-	public SocketAddress getLocalSocketAddress() {
-		return localSocketAddress;
-	}
+    public User(SocketAddress socketAddress, String userName, String secret) {
+        this.localSocketAddress = socketAddress;
+        this.userName = userName;
+        this.secret = secret;
+    }
 
-	public void setLocalSocketAddress(SocketAddress localSocketAddress) {
-		this.localSocketAddress = localSocketAddress;
-	}
+    public SocketAddress getLocalSocketAddress() {
+        return localSocketAddress;
+    }
 
-	public String getUserName() {
-		return userName;
-	}
+    public void setLocalSocketAddress(SocketAddress localSocketAddress) {
+        this.localSocketAddress = localSocketAddress;
+    }
 
-	public void setUserName(String userName) {
-		this.userName = userName;
-	}
+    public String getUserName() {
+        return userName;
+    }
 
-	public String getPassword() {
-		return password;
-	}
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
 
-	public void setPassword(String password) {
-		this.password = password;
-	}
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
 }

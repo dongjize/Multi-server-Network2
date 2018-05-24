@@ -9,26 +9,27 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Listener extends Thread {
+
     private static final Logger log = LogManager.getLogger();
     private ServerSocket serverSocket = null;
+    private Integer port;
     private boolean term = false;
-    private int portnum;
 
     public Listener() throws IOException {
-        portnum = Settings.getLocalPort(); // keep our own copy in case it changes later
-        serverSocket = new ServerSocket(portnum);
+        port = Settings.getLocalPort(); // keep our own copy in case it changes later
+        serverSocket = new ServerSocket(port);
         start();
     }
 
+
     @Override
     public void run() {
-        log.info("listening for new connections on " + portnum);
+        log.info("listening for new connections on " + port);
         while (!term) {
             Socket clientSocket;
             try {
                 clientSocket = serverSocket.accept();
                 Control.getInstance().incomingConnection(clientSocket);
-                System.out.println("get new client or server");
             } catch (IOException e) {
                 log.info("received exception, shutting down");
                 term = true;
