@@ -86,7 +86,7 @@ public class ControlHelper {
                 return onReceiveActivityMessage(con, request);
             case Message.ACTIVITY_BROADCAST:
                 return onReceiveActivityBroadcast(con, request);
-            case Message.ACK:
+            case Message.BROADCAST_ACKNOWLEDGE:
                 return onReceiveAck(con, request);
             case Message.SERVER_ANNOUNCE:
                 return onReceiveServerAnnounce(con, request);
@@ -223,6 +223,7 @@ public class ControlHelper {
         return false;
     }
 
+
     /**
      * Check local registered users list.
      * If username exists, LOCK_DENIED; else, LOCK_ALLOWED
@@ -231,7 +232,6 @@ public class ControlHelper {
      * @param request
      * @return
      */
-
     private boolean onLockRequest(Connection con, JsonObject request) {
         if (!con.getName().equals(Connection.PARENT) && !con.getName().equals(Connection.CHILD)) {
             return Message.invalidMsg(con, "The connection has not authenticated");
