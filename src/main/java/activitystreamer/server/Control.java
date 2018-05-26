@@ -1,6 +1,9 @@
 package activitystreamer.server;
 
-import activitystreamer.util.*;
+import activitystreamer.util.Constant;
+import activitystreamer.util.Message;
+import activitystreamer.util.Settings;
+import activitystreamer.util.User;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.logging.log4j.LogManager;
@@ -8,10 +11,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Control extends Thread {
@@ -21,11 +21,16 @@ public class Control extends Thread {
     private static Listener listener;
 
     private static Control control = null;
+    private int load;
+
+    // user data
     private Map<String, User> localRegisteredUsers;
     private Map<JsonObject, Connection> toBeRegisteredUsers;
     private Map<String, User> externalRegisteredUsers;
 
-    private int load;
+    // data from SERVER_ANNOUNCE
+    private Map<String, JsonObject> otherServers; // all external servers
+    private Map<String, Long> lastAnnounceTimestamps;
 
     public static Control getInstance() {
         if (control == null) {
@@ -40,6 +45,8 @@ public class Control extends Thread {
         localRegisteredUsers = new ConcurrentHashMap<>();
         toBeRegisteredUsers = new ConcurrentHashMap<>();
         externalRegisteredUsers = new ConcurrentHashMap<>();
+        otherServers = new ConcurrentHashMap<>();
+        lastAnnounceTimestamps = new ConcurrentHashMap<>();
 
         // start a listener
         try {
@@ -55,7 +62,7 @@ public class Control extends Thread {
         // make a connection to another server if remote hostname is supplied
         if (Settings.getRemoteHostname() != null) {
             try {
-                Connection c = outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
+                outgoingConnection(new Socket(Settings.getRemoteHostname(), Settings.getRemotePort()));
             } catch (IOException e) {
                 log.error("failed to make connection to " + Settings.getRemoteHostname() + ":"
                         + Settings.getRemotePort() + " :" + e);
@@ -105,29 +112,41 @@ public class Control extends Thread {
             con.setLoggedIn(false);
         }
 
-        // If parent server crashes，then establish new connection to another server (the one with minimum port number)
+        // If parent server crashes，then establish new connection to another server (the one having connections to other servers)
         if (con.getName().equals(Connection.PARENT)) {
-            Map<String, JsonObject> otherServers = ControlHelper.getInstance().getOtherServers();
-
-            // TODO there's a restriction: if the server with minimum port number crashes, then...
-            int newRemotePort = minPortOfSystem(otherServers);
-            if (newRemotePort != Settings.getLocalPort()) {
-                Settings.setRemotePort(newRemotePort);
+            int parentCount = otherServers.get(con.getSocket().getPort() + "").getAsJsonObject().get("parent_count").getAsInt();
+            if (parentCount == 0) { // 如果是root节点挂了，单独处理:
+                // 这里需要预先run一个备用server，port: 3779
+                Settings.setRemotePort(Settings.AUXILIARY_PORT);
                 initiateConnection();
+            } else {
+                otherServers.remove(con.getSocket().getPort() + "");
+                int newRemotePort = chooseNewPort(otherServers);
+                if (newRemotePort != -1 && newRemotePort != Settings.getLocalPort()) {
+                    Settings.setRemotePort(newRemotePort);
+                    initiateConnection();
+                }
             }
         }
 
     }
 
-    private int minPortOfSystem(Map<String, JsonObject> otherServers) {
-        String minPort = (String) CommonUtil.getMinKey(otherServers);
-        return Integer.parseInt(minPort);
+    private int chooseNewPort(Map<String, JsonObject> otherServers) {
+        Collection<JsonObject> values = otherServers.values();
+        for (JsonObject jo : values) {
+//            int serverCount = jo.get("server_count").getAsInt(); //TODO
+            // if server is not among subtree
+            if (!jo.get("is_subtree").getAsBoolean() && jo.get("relay_count").getAsInt() == 1 && jo.get("relay_from_parent").getAsBoolean()) {
+                return jo.get("port").getAsInt();
+            }
+        }
+        return -1;
     }
 
 
     /**
-     * A new incoming connection has been established, and a reference is returned
-     * to it. 1. remote server -> local server 2. client -> local server
+     * A new incoming connection has been established, and a reference is returned to it.
+     * 1. remote server -> local server 2. client -> local server
      *
      * @param s
      * @return
@@ -170,9 +189,20 @@ public class Control extends Thread {
                 }
             }
 
+            int parentCount = 0;
+            int childCount = 0;
+            for (Connection c : connections) {
+                if (c.isOpen() && c.getName().equals(Connection.PARENT)) {
+                    parentCount += 1;
+                }
+                if (c.isOpen() && c.getName().equals(Connection.CHILD)) {
+                    childCount += 1;
+                }
+            }
+
             for (Connection c : connections) {
                 if (c.isOpen() && (c.getName().equals(Connection.PARENT) || c.getName().equals(Connection.CHILD))) {
-                    Message.serverAnnounce(c, load);
+                    Message.serverAnnounce(c, load, parentCount, childCount);
                 }
             }
 
@@ -231,4 +261,19 @@ public class Control extends Thread {
         return externalRegisteredUsers;
     }
 
+    public Map<String, JsonObject> getOtherServers() {
+        return otherServers;
+    }
+
+    public void setOtherServers(Map<String, JsonObject> otherServers) {
+        this.otherServers = otherServers;
+    }
+
+    public Map<String, Long> getLastAnnounceTimestamps() {
+        return lastAnnounceTimestamps;
+    }
+
+    public void setLastAnnounceTimestamps(Map<String, Long> lastAnnounceTimestamps) {
+        this.lastAnnounceTimestamps = lastAnnounceTimestamps;
+    }
 }

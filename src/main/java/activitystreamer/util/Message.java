@@ -27,12 +27,33 @@ public class Message {
     public static final String LOCK_DENIED = "LOCK_DENIED";
     public static final String LOCK_ALLOWED = "LOCK_ALLOWED";
     public static final String SYNCHRONIZE_USER = "SYNCHRONIZE_USER";
+    public static final String ACK = "ACK";
+    public static final String BROADCASTSUCCESS = "BROADCASTSUCCESS";
+
 
     public synchronized static boolean synchronizeUser(Connection con, Map<String, User> users) {
         JsonObject json = new JsonObject();
         json.addProperty("command", Message.SYNCHRONIZE_USER);
         Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
         json.add("users", new JsonParser().parse(gson.toJson(users)).getAsJsonObject());
+        con.writeMsg(new Gson().toJson(json));
+        return false;
+    }
+
+    public synchronized static void broadCastSuccess(Connection con, JsonObject msg) {
+        JsonObject json = new JsonObject();
+        json.addProperty("command", Message.BROADCASTSUCCESS);
+        json.add("msg", msg);
+        con.writeMsg(new Gson().toJson(json));
+        return;
+    }
+
+    public synchronized static boolean returnAck(Connection con, JsonObject msg) {
+        System.out.println("send ack");
+        JsonObject json = new JsonObject();
+        json.addProperty("command", Message.ACK);
+        json.add("msg", msg);
+        json.addProperty("from", Settings.getServerId());
         con.writeMsg(new Gson().toJson(json));
         return false;
     }
@@ -61,14 +82,17 @@ public class Message {
     }
 
 
-    public synchronized static void serverAnnounce(Connection con, int load) {
+    public synchronized static void serverAnnounce(Connection con, int load, int parentCount, int childCount) {
         Gson gson = new Gson();
         JsonObject json = new JsonObject();
         json.addProperty("command", Message.SERVER_ANNOUNCE);
         json.addProperty("id", Settings.getServerId());
         json.addProperty("load", load);
+        json.addProperty("parent_count", parentCount);
+        json.addProperty("child_count", childCount);
         json.addProperty("hostname", Settings.getLocalHostname());
         json.addProperty("port", Settings.getLocalPort());
+        json.addProperty("relay_count", 0);
         con.writeMsg(gson.toJson(json));
     }
 
