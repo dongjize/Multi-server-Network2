@@ -20,8 +20,8 @@ dependencies {
 }
 
 
-def appMainClass = 'activitystreamer.Server'
-//def appMainClass = 'activitystreamer.Client'
+//def appMainClass = 'activitystreamer.Server'
+def appMainClass = 'activitystreamer.Client'
 
 
 jar {
